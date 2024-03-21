@@ -12,6 +12,7 @@ RUN apt-get update && apt-get install -y \
     libxml2-dev \
     git \
     unzip \
+    curl \
     && apt-get clean
 
 # Configurar y instalar extensiones de PHP utilizando docker-php-ext-configure y docker-php-ext-install
@@ -23,6 +24,10 @@ RUN a2enmod rewrite
 
 # Instalar Composer globalmente
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+
+# Asegurarse de que Composer se encuentre en el PATH. Esto no debería ser necesario si usas la ruta completa /usr/local/bin/composer, 
+# pero es una buena práctica verificar el PATH si tienes problemas para ejecutar Composer.
+ENV PATH="/usr/local/bin:${PATH}"
 
 # Establecer el directorio de trabajo en el directorio raíz de Apache.
 WORKDIR /var/www/html
