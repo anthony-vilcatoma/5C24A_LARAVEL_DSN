@@ -1,32 +1,42 @@
-# Establece la imagen base
-FROM php:8.0-fpm
+# Usar una imagen base oficial de PHP con la versión que prefieras. 
+# Esta versión incluye muchas extensiones PHP y Apache.
+FROM php:8.0-apache
 
-# Instala las dependencias de sistema necesarias
+# Instalar dependencias del sistema para PHP y extensiones necesarias.
 RUN apt-get update && apt-get install -y \
+    libpng-dev \
+    libjpeg-dev \
+    libfreetype6-dev \
+    libwebp-dev \
+    libonig-dev \
+    libxml2-dev \
     git \
     unzip \
-    libpng-dev \
-    libonig-dev \
-    libxml2-dev
+    && apt-get clean
 
-# Instala las extensiones de PHP
-RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd
+# Configurar y instalar extensiones de PHP utilizando docker-php-ext-configure y docker-php-ext-install
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp
+RUN docker-php-ext-install pdo pdo_mysql mbstring exif pcntl bcmath gd
 
+# Habilitar el mod_rewrite de Apache para las URLs amigables de Laravel
+RUN a2enmod rewrite
 
-# Instala Composer
+# Instalar Composer globalmente
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
-# Establece el directorio de trabajo
-WORKDIR /var/www
+# Establecer el directorio de trabajo en el directorio raíz de Apache.
+WORKDIR /var/www/html
 
-# Copia la aplicación al contenedor
-COPY . /var/www
+# Copiar el proyecto Laravel al contenedor
+COPY . /var/www/html
 
-# Instala las dependencias de PHP
+# Instalar dependencias de Composer (ajustar según sea necesario para tu entorno de producción)
 RUN composer install --optimize-autoloader --no-dev
 
-# Expone el puerto 8000
-EXPOSE 8000
+# Cambiar el propietario de los archivos al usuario de Apache para evitar problemas de permisos
+RUN chown -R www-data:www-data /var/www/html
 
-# Comando para iniciar el servidor de Laravel
-CMD php artisan serve --host=0.0.0.0 --port=8000
+# Exponer el puerto 80 para acceder al servidor web
+EXPOSE 80
+
+# El contenedor ya está configurado para arrancar con Apache en primer plano, por lo que no es necesario CMD.
